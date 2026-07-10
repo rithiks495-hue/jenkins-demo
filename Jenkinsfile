@@ -1,11 +1,32 @@
 pipeline {
+
     agent any
 
     stages {
-        stage('Test') {
+
+        stage('Credentials Demo') {
+
             steps {
-                echo 'Pipeline Started'
+
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'github-creds',
+                        usernameVariable: 'USERNAME',
+                        passwordVariable: 'PASSWORD'
+                    )
+                ]) {
+
+                    sh '''
+                    echo Username is $USERNAME
+                    echo Password Loaded Successfully
+                    '''
+
+                }
+
             }
+
         }
+
     }
+
 }
