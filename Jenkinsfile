@@ -49,15 +49,53 @@ pipeline {
                 '''
             }
         }
+
+        stage('Push to Amazon ECR') {
+            steps {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'aws-ecr-credentials',
+                        usernameVariable: 'AWS_ACCESS_KEY_ID',
+                        passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+                    )
+                ]) {
+                    sh '''
+                        export AWS_DEFAULT_REGION=ap-south-1
+
+                        AWS_ACCOUNT_ID=997785426159
+                        ECR_REPOSITORY=jenkins-demo
+                        ECR_REGISTRY=${AWS_ACCOUNT_ID}.dkr.ecr.ap-south-1.amazonaws.com
+
+                        echo "Logging into Amazon ECR..."
+
+                        aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin $ECR_REGISTRY
+
+                        echo "Tagging Docker images..."
+
+                        docker tag jenkins-demo:${BUILD_NUMBER} $ECR_REGISTRY/$ECR_REPOSITORY:${BUILD_NUMBER}
+
+                        docker tag jenkins-demo:latest $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+                        echo "Pushing images to Amazon ECR..."
+
+                        docker push $ECR_REGISTRY/$ECR_REPOSITORY:${BUILD_NUMBER}
+
+                        docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+                        echo "ECR push completed successfully!"
+                    '''
+                }
+            }
+        }
     }
 
     post {
         success {
-            echo 'CI Pipeline completed successfully!'
+            echo 'CI/CD Pipeline completed successfully!'
         }
 
         failure {
-            echo 'CI Pipeline failed. Check console output.'
+            echo 'Pipeline failed. Check console output.'
         }
 
         always {
@@ -65,4 +103,3 @@ pipeline {
         }
     }
 }
-
